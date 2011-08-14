@@ -1,4 +1,6 @@
 # Run this with "coffee blackjack.coffee"
+_ = require('underscore')
+
 Array::remove = (e) -> this.splice(this.indexOf(e), 1)
 Array::clone = ->
   cloned = []
@@ -71,39 +73,39 @@ class Table
     @games += 1
     console.log "** begin game #{@games} **"
     console.log "Players:"
-    for player in @players
-      console.log " - #{player}"
+    _.each(@players, (player) -> console.log " - #{player}")
     console.log ""
     true
   end_game: ->
-    for player in @players.clone()
-      this.unseat(player) unless player.can_wager(@wager_amount)
+    that = this
+    wager_amount = @wager_amount
+    _.each(@players.clone(), (player) -> that.unseat(player) unless player.can_wager(wager_amount))
     console.log "** end game #{@games} **\n"
   close_table: ->
-    for player in @players.clone()
-      this.unseat player
+    that = this
+    _.each(@players.clone(), (player) -> that.unseat player)
     console.log "** Thanks for playing! **"
   collect_bets: ->
-    for player in @players
-      player.wager @wager_amount
+    wager_amount = @wager_amount
+    _.each(@players, (player) -> player.wager wager_amount)
   deal: ->
     console.log "The cards are dealt"
     @score = new Score(21)
-    for player in @players
-      player.score = new Score(21)
+    _.each(@players, (player) -> player.score = new Score(21))
   reveal: ->
-    for player in @players
-      player.reveal()
+    _.each(@players, (player) -> player.reveal())
     console.log "Dealer has #{@score}"
   handle_money: ->
-    for player in @players
-      if @score.greaterThan player.score
+    score = @score
+    wager_amount = @wager_amount
+    _.each(@players, (player) ->
+      if score.greaterThan player.score
         console.log "Dealer beats #{player.name}"
-        player.lose @wager_amount
+        player.lose wager_amount
       else
         console.log "#{player.name} beats Dealer!"
-        player.win @wager_amount.minus(new Money(1))
-
+        player.win wager_amount.minus(new Money(1))
+      )
 
 console.log "** Welcome to Blackjack **\n"
 table = new Table()
