@@ -73,17 +73,17 @@ class Table
     @games += 1
     console.log "** begin game #{@games} **"
     console.log "Players:"
-    _.each(@players, (player) -> console.log " - #{player}")
+    this.each_player((player) -> console.log " - #{player}")
     console.log ""
     true
   end_game: ->
     that = this
     wager_amount = @wager_amount
-    _.each(@players.clone(), (player) -> that.unseat(player) unless player.can_wager(wager_amount))
+    this.each_player((player) -> that.unseat(player) unless player.can_wager(wager_amount))
     console.log "** end game #{@games} **\n"
   close_table: ->
     that = this
-    _.each(@players.clone(), (player) -> that.unseat player)
+    this.each_player((player) -> that.unseat player)
     console.log "** Thanks for playing! **"
   collect_bets: ->
     wager_amount = @wager_amount
@@ -91,14 +91,14 @@ class Table
   deal: ->
     console.log "The cards are dealt"
     @score = new Score(21)
-    _.each(@players, (player) -> player.score = new Score(21))
+    this.each_player((player) -> player.score = new Score(21))
   reveal: ->
-    _.each(@players, (player) -> player.reveal())
+    this.each_player((player) -> player.reveal())
     console.log "Dealer has #{@score}"
   handle_money: ->
     score = @score
     wager_amount = @wager_amount
-    _.each(@players, (player) ->
+    this.each_player((player) ->
       if score.greaterThan player.score
         console.log "Dealer beats #{player.name}"
         player.lose wager_amount
@@ -106,6 +106,8 @@ class Table
         console.log "#{player.name} beats Dealer!"
         player.win wager_amount.minus(new Money(1))
       )
+  each_player: (funktion) ->
+    _.each(@players.clone(), funktion)
 
 console.log "** Welcome to Blackjack **\n"
 table = new Table()
