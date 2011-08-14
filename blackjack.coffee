@@ -1,4 +1,10 @@
 # Run this with "coffee blackjack.coffee"
+Array::remove = (e) -> this.splice(this.indexOf(e), 1)
+Array::clone = ->
+  cloned = []
+  for i in this
+    cloned.push i
+  cloned
 
 Number::times = (funktion) ->
   for x in [1..this]
@@ -24,8 +30,10 @@ class Player
   constructor: (@name) ->
     @bank = new Money(100)
   toString: -> @name + " (" + @bank + ")"
+  games: 0
   can_wager: (amount) -> @bank.at_least amount
   wager: (amount) ->
+    @games += 1
     console.log "#{@name} wagers #{amount}"
     amount
   lose: (amount) ->
@@ -36,48 +44,70 @@ class Player
     @bank = @bank.plus amount
   reveal: ->
     console.log "#{@name} has #{@score}"
+  leave: ->
+    console.log "#{@name} leaves after #{@games} games, with #{@bank} in his pocket"
 
 class Table
-  seat: (@player) ->
+  seat: (player) ->
+    if player.can_wager @wager_amount
+      @players.push player
+    else
+      console.log "#{player.name} must have at least #{@wager_amount} in the bank to play."
+  unseat: (player) ->
+    player.leave()
+    @players.remove player
   play_game: =>
-    return unless @player.can_wager @minimum_wager
-    this.begin_game()
-    this.collect_bets()
-    this.deal()
-    this.reveal()
-    this.handle_money()
-    this.end_game()
+    if this.begin_game()
+      this.collect_bets()
+      this.deal()
+      this.reveal()
+      this.handle_money()
+      this.end_game()
+  wager_amount: new Money(11)
+  players: []
   games: 0
-  minimum_wager: new Money(11)
   begin_game: ->
+    return false unless @players.length > 0
     @games += 1
     console.log "** begin game #{@games} **"
-    console.log "Players:\n  - #{@player}"
+    console.log "Players:"
+    for player in @players
+      console.log " - #{player}"
+    console.log ""
+    true
   end_game: ->
+    for player in @players.clone()
+      this.unseat(player) unless player.can_wager(@wager_amount)
     console.log "** end game #{@games} **\n"
+  close_table: ->
+    for player in @players.clone()
+      this.unseat player
+    console.log "** Thanks for playing! **"
   collect_bets: ->
-    @wager = @player.wager @minimum_wager
+    for player in @players
+      player.wager @wager_amount
   deal: ->
     console.log "The cards are dealt"
-    @score = new Score(17)
-    @player.score = new Score(14)
+    @score = new Score(21)
+    for player in @players
+      player.score = new Score(21)
   reveal: ->
-    @player.reveal()
+    for player in @players
+      player.reveal()
     console.log "Dealer has #{@score}"
   handle_money: ->
-    if @score.greaterThan @player.score
-      console.log "Dealer wins"
-      @player.lose @wager
-    else
-      console.log "#{@player.name} wins!"
-      @player.win @wager.minus(new Money(1))
-
+    for player in @players
+      if @score.greaterThan player.score
+        console.log "Dealer beats #{player.name}"
+        player.lose @wager_amount
+      else
+        console.log "#{player.name} beats Dealer!"
+        player.win @wager_amount.minus(new Money(1))
 
 
 console.log "** Welcome to Blackjack **\n"
-player = new Player("Pat")
-table = new Table
-table.seat player
-500.times table.play_game
-
-console.log "#{player.name} leaves after #{table.games} games, with #{player.bank} in his pocket"
+table = new Table()
+table.seat(new Player("Pat"))
+table.seat(new Player("Jay"))
+100.times table.play_game
+table.close_table()
